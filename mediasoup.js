@@ -2,15 +2,17 @@ let mediasoup = require('mediasoup');
 
 let Workers = [];
 
+let Routers = new Map(); // @type {Map<Number>, Router>}
+
 /*
     Function to create a Worker. A Worker looks like a game environment.
     Parameters:
-        @String loglevel
-        @Array<String> logTags
-        @Number rtcMinPort
-        @Number rtcMaxPort
-        @Number dtlsCertificateFile
-        @Number dtlsPrivateKeyFile
+        @param {String} loglevel
+        @param {Array<String>} logTags
+        @param {Number} rtcMinPort
+        @param {Number} rtcMaxPort
+        @param {Number} dtlsCertificateFile
+        @param {Number} dtlsPrivateKeyFile
 */
 module.exports.create_worker = async (req, res) => {
     const worker = await mediasoup.createWorker({
@@ -24,6 +26,7 @@ module.exports.create_worker = async (req, res) => {
         console.log('mediasoup Worker died, exiting  in 2 seconds... [pid:%d]', worker.pid);
             
     });
+    console.log(worker);
     Workers.push(worker);
     res.json({"pid": worker.pid});
 }
@@ -55,14 +58,73 @@ module.exports.get_worker_by_pid = async (req, res) => {
         
     Workers.forEach((worker) => {
         if (worker.pid == req.params.pid_worker) {
+            console.log(worker);
             res.send("Found worker");
         }
     });
     
-    res.send("Don't found worker! Try again.");
+    res.send("Didn't find worker! Try again.");
 } 
 
+module.exports.create_router = async (req, res) => {
+    const mediaCodecs =
+    [
+      {
+        kind        : "audio",
+        mimeType    : "audio/opus",
+        clockRate   : 48000,
+        channels    : 2
+      },
+      {
+        kind       : "video",
+        mimeType   : "video/H264",
+        clockRate  : 90000,
+        parameters :
+        {
+          "packetization-mode"      : 1,
+          "profile-level-id"        : "42e01f",
+          "level-asymmetry-allowed" : 1
+        }
+      }
+    ];
+    await Workers.forEach((worker) => {
+        console.log(worker.pid);
+        if (worker.pid == req.params.pid_worker) {
+            const router =  worker.createRouter(mediaCodecs);
+            console.log(router);
+            router.then((router) => {
+                console.log(router._internal.routerId);
+                Routers.set(router._internal.routerId, router);
+                res.send({"router_id": router._internal.routerId});
+            });
+            
+        }
+    });
+}
 
+module.exports.get_all_router_of_worker = (req, res) => {
+
+}
+
+module.exports.create_webrtc_transport = async (req, res) => {
+   const webrtc = await Routers.get(req.params.id_router).createWebRtcTransport(
+    {
+        listenIps : [ { ip: "192.168.0.4" } ],
+        enableUdp : true,
+        enableTcp : true,
+        preferUdp : true,
+        enableSctp: true
+    });
+    console.log(webrtc);
+    console.log('getStats()');
+    console.log(webrtc.getStats());
+    res.send("Webrtc Transport created");
+}
+
+module.exports.get_router_by_id = (req, res) => {
+    console.log(Routers.get(req.params.id_router));
+    res.send("Router found");
+}
 //const rtpCapabilities = mediasoup.getSupportedRtpCapabilities();
 
     //console.log(rtpCapabilities);
@@ -70,9 +132,11 @@ events = () => {
 
     // Event fire when add a new worker
     mediasoup.observer.on("newworker", (worker) => {
-        console.log("new worker created [pid:%d]", worker.pid);
+        console.log("New worker created [pid:%d]", worker.pid);
       });
 
 }
+
+events();
 
 
