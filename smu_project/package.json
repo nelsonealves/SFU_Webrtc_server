@@ -1,0 +1,18 @@
+{
+  "name": "smu_project",
+  "version": "1.0.0",
+  "description": "Projeto disciplina SMU 2019/2",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Nelson Alves",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "consign": "^0.1.6",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "mediasoup": "^3.2.5"
+  }
+}
