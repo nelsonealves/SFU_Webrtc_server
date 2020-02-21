@@ -11,11 +11,11 @@
 
 ## Sinalização
 A sinalização entre servidor e cliente do Phaser é feita através de websocket e suas tags foram criadas manualmente. Já a comunicação entre servidor Phaser e servidor MediaSoup é realizada através de requisições HTTP. Toda a implementação foi projetada para atender apenas dois usuários. Vale ressaltar que a sinalização serve para comunicação do jogo e também para estabelecer a conexão dos usuários com o servidor MediaSoup.
->> Tag "req_transport"
-Antes mesmo de estabelecermos a conexão dos usuário com o servidor MediaSoup foi necessário distinguir-los, uma vez que os personagens do jogo precisam nascer em locais diferentes. A tag "req_transport" notifica o servidor da sua entrada no jogo e informado se é o jogador 1 ou 2, e também instância o WebRtcTransport, responsável pela criação dos canais de transporte no mediasoup-client para transmissão e recepção dos data channels. Internamente, o transporte mantém uma instância do WebRTC RTCPeerConnection. O servidor responde a requisição através da tag "res_transport"
+### Tag "req_transport"
+>> Antes mesmo de estabelecermos a conexão dos usuário com o servidor MediaSoup foi necessário distinguir-los, uma vez que os personagens do jogo precisam nascer em locais diferentes. A tag "req_transport" notifica o servidor da sua entrada no jogo e informado se é o jogador 1 ou 2, e também instância o WebRtcTransport, responsável pela criação dos canais de transporte no mediasoup-client para transmissão e recepção dos data channels. Internamente, o transporte mantém uma instância do WebRTC RTCPeerConnection. O servidor responde a requisição através da tag "res_transport"
 
->> Tag "res_transport"
-Nesta etapa é que acontece a oferta de midia do MediaSoup. Ao receber as instâncias do objeto WebRtcTransport os parâmetros ofertados pelo servidos são enviados para o cliente, bastando apenas criar as instâncias no lado cliente e conectar o transporte. Segue abaixo imagem dos parâmetros enviados. Podemos notar a presença de parâmetros vistos na matérias como os parâmetros e candidatos do parâmetro ICE, SCTP e até mesmo a chave dtls para fornecer segurança na comunicação ponta-a-ponta.
+### Tag "res_transport"
+>> Nesta etapa é que acontece a oferta de midia do MediaSoup. Ao receber as instâncias do objeto WebRtcTransport os parâmetros ofertados pelo servidos são enviados para o cliente, bastando apenas criar as instâncias no lado cliente e conectar o transporte. Segue abaixo imagem dos parâmetros enviados. Podemos notar a presença de parâmetros vistos na matérias como os parâmetros e candidatos do parâmetro ICE, SCTP e até mesmo a chave dtls para fornecer segurança na comunicação ponta-a-ponta.
 
 // Adicionar imagem
 
