@@ -17,7 +17,7 @@ A sinalização entre servidor e cliente do Phaser é feita através de websocke
 ### Tag "res_transport"
 > Nesta etapa é que acontece a oferta de midia do MediaSoup. Ao receber as instâncias do objeto WebRtcTransport os parâmetros ofertados pelo servidos são enviados para o cliente, bastando apenas criar as instâncias no lado cliente e conectar o transporte. Segue abaixo imagem dos parâmetros enviados. Podemos notar a presença de parâmetros vistos na matérias como os candidatos do parâmetro ICE, SCTP e até mesmo a chave dtls para fornecer segurança na comunicação ponta-a-ponta.
 
-(image/midia.png)
+![](image/midia.png)
 
 ### Tag "producedata"
 Estabelecida conexão, o lado cliente requisita a criação da instância Producer, citada anteriormente. Criada essa instância nos dois lados, o jogo está pronto para começar.
