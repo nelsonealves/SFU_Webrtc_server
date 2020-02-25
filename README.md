@@ -32,11 +32,12 @@ Ambos tem a capacidade de comunicar com o servidor e serem notificados do status
 
   
  ## Instalando módulos e pacotes
- > git clone https://github.com/nelsonealves/SFU_Webrtc_server.git
- cd SFU_Webrtc_server
- ./install.sh
- ./run.sh
- 
+ 1. git clone https://github.com/nelsonealves/SFU_Webrtc_server.git
+ 2. cd SFU_Webrtc_server
+ 3. ./install.sh
+ 4. ./run.sh
+ 5. Abra o navegador e acesse http://(ip do servidor):3000  
+
  
  
 
