@@ -17,7 +17,8 @@ A sinalização entre servidor e cliente do Phaser é feita através de websocke
 ### Tag "res_transport"
 > Nesta etapa é que acontece a oferta de midia do MediaSoup. Ao receber as instâncias do objeto WebRtcTransport os parâmetros ofertados pelo servidos são enviados para o cliente, bastando apenas criar as instâncias no lado cliente e conectar o transporte. Segue abaixo imagem dos parâmetros enviados. Podemos notar a presença de parâmetros vistos na matérias como os candidatos do parâmetro ICE, SCTP e até mesmo a chave dtls para fornecer segurança na comunicação ponta-a-ponta.
 
-![](image/midia.png)
+
+
 
 ### Tag "producedata"
 Estabelecida conexão, o lado cliente requisita a criação da instância Producer, citada anteriormente. Criada essa instância nos dois lados, o jogo está pronto para começar.
@@ -29,7 +30,26 @@ Chamada para a criação do Consumer, realizando o subscriber no Producer do out
 
 Ambos tem a capacidade de comunicar com o servidor e serem notificados do status do outro cliente. Sendo assim, todas as configurações necessárias para o correto funcionamento do MediaSoup é realizada até o momento que ambos clientes são notificados que estão preparados para iniciar o jogo. Além disso, o servidor informa ao cliente que acabou de entrar se o mesmo é o jogador 1 ou 2 (isso é necessário para a definição da posição inicial do personagem ao iniciar o jogo).  
 
+## Negociação de mídia
 
+A negociação de midia acontece na criação do transporte WebRtc. Um transporte WebRTC representa um caminho de rede negociado por ambos via procedimentos ICE e DTLS. Um transporte WebRTC pode ser usado para receber mídia, enviar mídia ou para receber e enviar. Não há limitação no mediasoup. No entanto, devido ao seu design, o mediasoup-client e o libmediasoupclient requerem transportes WebRTC separados para envio e recebimento. Ao chamar Router.createWebRtcTransport() definem-se os parâmetros que serão ofertados através de atributos, tais como:
+* listenIps - Endereço IP de hospedagem do servidor
+* enableUdp - Ofertar protocolo Udp
+* enableTcp - Ofertar protocolo Tcp
+* preferUdp - Dá preferência de escolha do protocolo Udp na oferta da midia.
+* enableSctp - Ofertar protocolo Sctp
+  
+Como estamos lidando com dataChannels, podemos ver no exemplo a seguir que no servidor foi dada prefêrencia ao uso do protocolo udp para transporte: 
+  
+![](image/webrtctransport.png)
+  
+Com isso, temos as midias ofertadas:
+ 
+![](image/midia_ofertada.png)
+  
+Para conexão, a chamada webRtcTransport.connect({ dtlsParameters }) recebe a chave dtls responsável por prôver o transporte WebRtc com os clientes. Na imagem a seguir uma exemplo de uma chave dtls entregue para conexão:
+
+![](image/dtls.png)
   
  ## Instalando módulos e pacotes
  1. git clone https://github.com/nelsonealves/SFU_Webrtc_server.git
