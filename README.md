@@ -12,10 +12,15 @@
 ## Sinalização
 A sinalização entre servidor e cliente do Phaser é feita através de websocket e suas tags foram criadas manualmente. Já a comunicação entre servidor Phaser e servidor MediaSoup é realizada através de requisições HTTP. Toda a implementação foi projetada para atender apenas dois usuários. Vale ressaltar que a sinalização serve para comunicação do jogo e também para estabelecer a conexão dos usuários com o servidor MediaSoup.
 ### Tag "req_transport"
-> Antes mesmo de estabelecermos a conexão dos usuário com o servidor MediaSoup foi necessário distinguir-los, uma vez que os personagens do jogo precisam nascer em locais diferentes. A tag "req_transport" notifica o servidor da sua entrada no jogo e informado se é o jogador 1 ou 2, e também instância o WebRtcTransport, responsável pela criação dos canais de transporte no mediasoup-client para transmissão e recepção dos data channels. Internamente, o transporte mantém uma instância do WebRTC RTCPeerConnection. O servidor responde a requisição através da tag "res_transport"
+>  A tag "req_transport" notifica o servidor da sua entrada no jogo e requisita as midias, bem como instância o WebRtcTransport, responsável pela criação dos canais de transporte no mediasoup-client para transmissão e recepção dos data channels. Internamente, o transporte mantém uma instância do WebRTC RTCPeerConnection. A chamada é feita através de uma chamada HTTP no mediasoup server com uri "/router/(id do router)/webrtc_transport/create". O servidor responde a requisição através da tag "res_transport"
 
 ### Tag "res_transport"
-> Nesta etapa é que acontece a oferta de midia do MediaSoup. Ao receber as instâncias do objeto WebRtcTransport os parâmetros ofertados pelo servidos são enviados para o cliente, bastando apenas criar as instâncias no lado cliente e conectar o transporte. Segue abaixo imagem dos parâmetros enviados. Podemos notar a presença de parâmetros vistos na matérias como os candidatos do parâmetro ICE, SCTP e até mesmo a chave dtls para fornecer segurança na comunicação ponta-a-ponta.
+> Nesta etapa é que acontece a oferta de midia do MediaSoup. Ao receber as instâncias do objeto WebRtcTransport os parâmetros ofertados pelo servidos são enviados para o cliente, bastando apenas criar as instâncias no lado cliente e conectar o transporte. Devido ao seu design, o mediasoup-client requer transportes WebRTC separados para envio e recebimento. Sendo assim é recebido como resposta da chamada "req_transport" as ofertas de midia do transporte Webrtc (Nesse ponto ainda não foi  definido qual recebe e qual envia, entretanto já é definido os atributos "send" e "recv" para facilitar na programação). 
+
+* send: Parâmetro com a oferta do transporte de envio
+* recv: Parâmetro com a oferta do transporte de recepção
+
+Em seguida é definido a direção do transporte Webrtc com as chamadas createSendTransport(options) e createRecvTransport(options), ambos recebem as mídias ofertadas. 
 
 
 
@@ -32,7 +37,7 @@ Ambos tem a capacidade de comunicar com o servidor e serem notificados do status
 
 ## Negociação de mídia
 
-A negociação de midia acontece na criação do transporte WebRtc. Um transporte WebRTC representa um caminho de rede negociado por ambos via procedimentos ICE e DTLS. Um transporte WebRTC pode ser usado para receber mídia, enviar mídia ou para receber e enviar. Não há limitação no mediasoup. No entanto, devido ao seu design, o mediasoup-client requer transportes WebRTC separados para envio e recebimento. Ao chamar Router.createWebRtcTransport() definem-se os parâmetros que serão ofertados através de atributos, tais como:
+A negociação de midia acontece na criação do transporte WebRtc. Um transporte WebRTC representa um caminho de rede negociado por ambos via procedimentos ICE e DTLS. Um transporte WebRTC pode ser usado para receber mídia, enviar mídia ou para receber e enviar. Não há limitação no mediasoup. Ao chamar Router.createWebRtcTransport() definem-se os parâmetros que serão ofertados através de atributos, tais como:
 * listenIps - Endereço IP de hospedagem do servidor
 * enableUdp - Ofertar protocolo Udp
 * enableTcp - Ofertar protocolo Tcp
@@ -47,7 +52,7 @@ Com isso, temos as midias ofertadas:
  
 ![](image/midia_ofertada.png)
   
-Para conexão, a chamada webRtcTransport.connect({ dtlsParameters }) recebe a chave dtls responsável por prôver o transporte WebRtc com os clientes. Na imagem a seguir uma exemplo de uma chave dtls entregue para conexão:
+Para conexão, ao realizar a chamada createSendTransport() ou createRecvTransport() no lado cliente é criada uma escuta aguardando a chamada do servidor do reconhecimento da definição da midia escolhida e é enviada uma chave dtls para autenticação e estabelecimento do transporte. A chamada webRtcTransport.connect({ dtlsParameters }) no lado servidor recebe a chave dtls responsável por prôver o transporte WebRtc com os clientes. Na imagem a seguir uma exemplo de uma chave dtls entregue para conexão:
 
 ![](image/dtls.png)
   
