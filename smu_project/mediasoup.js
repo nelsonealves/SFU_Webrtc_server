@@ -29,6 +29,7 @@ module.exports.create_worker = async (req, res) => {
             
     });
     console.log("Worker criado: id %s",worker.pid);
+    console.log(worker);
     Workers.push(worker);
     res.json({"pid": worker.pid});
 }
@@ -95,8 +96,10 @@ module.exports.create_router = async (req, res) => {
             const router =  worker.createRouter(mediaCodecs);
             console.log(router);
             router.then((router) => {
-                console.log(router._internal.routerId);
+                //console.log(router._internal.routerId);
                 Routers.set(router._internal.routerId, router);
+                console.log("!!!!!!!!!!!!!!!!!!!!!!create_router!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                console.log(router);
                 res.send({"router_id": router._internal.routerId});
             });
             
@@ -114,7 +117,6 @@ module.exports.create_webrtc_transport = async (req, res) => {
     {
         listenIps : [ { ip: "192.168.0.8" } ],
         enableUdp : true,
-        enableTcp : true,
         preferUdp : true,
         enableSctp: true
     });
@@ -154,7 +156,8 @@ module.exports.create_webrtc_transport = async (req, res) => {
     
     
     Webrtc_transport.set(webrtc._internal.transportId, webrtc);
-    console.log("Criado Webrtc id:", webrtc._internal.transportId);
+    //console.log("Criado Webrtc id:", webrtc._internal.transportId);
+    console.log("!!!!!!!!!!!!!!!!!!! WEBRTCC !!!!!!!!!!!!!!!!!!!!!!!1");
     console.log(webrtc)
     res.send({
         id: webrtc._internal.transportId,
@@ -170,6 +173,8 @@ module.exports.create_webrtc_transport = async (req, res) => {
 module.exports.webrtc_connect = async (req, res) => {
     let webrtc1 = Webrtc_transport.get(req.params.transport_id)
     console.log('Conectando ', req.params.transport_id);
+    console.log("!!!!!!!!!!1 DTLS PARAMETERS");
+    console.log(req.body.dtlsParameters);
     if(webrtc1) await webrtc1.connect({"dtlsParameters": req.body.dtlsParameters});
     res.send({teste:"ok"});
 }
@@ -178,7 +183,9 @@ module.exports.data_producer = async (req, res) => {
     let webrtc1 = Webrtc_transport.get(req.params.transport_id);
     const dataProducer = await webrtc1.produceData(req.body);
     DataProducer.set(dataProducer._internal.transportId, dataProducer)
-    console.log("DataProducer Criado", dataProducer._internal.dataProducerId);
+    console.log("!!!!!!!!!!!!!!!!!!! DATA PRODUCER !!!!!!!!!!!!!11");
+    console.log(dataProducer);
+    //console.log("DataProducer Criado", dataProducer._internal.dataProducerId);
     res.json(dataProducer._internal.dataProducerId);
 } 
 
@@ -210,8 +217,8 @@ module.exports.data_consumer = async (req, res) => {
     //       dataProducerId : req.body.res
     //     });
    
-    console.log('dataConsumer criado');
-    //console.log(dataConsumer);
+    console.log('!!!!!!!!!!!!!!!!!!11 dataConsumer !!!!!!!!!!!!!!!!!!!!');
+    console.log(dataConsumer);
     res.json(
         {
             id                   : dataConsumer._data.id,

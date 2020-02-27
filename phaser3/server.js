@@ -49,6 +49,7 @@ io.on("connection", socket => {
   })
 
   socket.on('req_transport', req => {
+    console.log("!!!!!!!!!!Resposta req_transport!!!!!!!!!1");
     req.transport_id = {send: null, recv: null};
     if (users.length >= 2){
       socket.emit('res_transport', {data: {status: 400, resp:"length > 2"}});
@@ -70,6 +71,12 @@ io.on("connection", socket => {
         req.transport_id.player = users.length;
         setTimeout(()=>{
           users.push(req.transport_id);
+          console.log("!!!!!!!!!!!!!!!!! emit res_transport");
+          //console.log({data: {status: 200, resp: req.transport_id}});
+          console.log("req.transport_id.send");
+          console.log(req.transport_id.send);
+          console.log("req.transport_id.recv");
+          console.log(req.transport_id.recv);
           socket.emit('res_transport', {data: {status: 200, resp: req.transport_id}});
         }, 100);
        
@@ -82,10 +89,14 @@ io.on("connection", socket => {
   })
   
   socket.on("req_params", parameter => {
+    console.log("!!!!!!!!!!!!11 req_params response")
+    console.log(parameter);
     fetch('http://localhost:8081/router/'+transport_id+"/webrtc_transport/all_parameters",{
                 method: 'GET'
               }).then(res => res.json()).then((data) => {
                 parameter = data;
+                console.log("!!!!!!!!!!!!!!!!!!!1 emit res_params");
+                console.log(data);
                 socket.emit("res_params", data);
               });
       }
@@ -132,7 +143,7 @@ io.on("connection", socket => {
       method: 'POST',
       body: JSON.stringify(data)
     }).then(res => res.json()).then((response) => {
-      console.log('resposta do dataconsumer');
+      console.log('!!!!!!!!!!!!!!!resposta do dataconsumer');
       console.log(response);
       socket.emit("res_dataconsumer", response); 
     });
