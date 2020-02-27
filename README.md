@@ -32,7 +32,7 @@ Ambos tem a capacidade de comunicar com o servidor e serem notificados do status
 
 ## Negociação de mídia
 
-A negociação de midia acontece na criação do transporte WebRtc. Um transporte WebRTC representa um caminho de rede negociado por ambos via procedimentos ICE e DTLS. Um transporte WebRTC pode ser usado para receber mídia, enviar mídia ou para receber e enviar. Não há limitação no mediasoup. No entanto, devido ao seu design, o mediasoup-client e o libmediasoupclient requerem transportes WebRTC separados para envio e recebimento. Ao chamar Router.createWebRtcTransport() definem-se os parâmetros que serão ofertados através de atributos, tais como:
+A negociação de midia acontece na criação do transporte WebRtc. Um transporte WebRTC representa um caminho de rede negociado por ambos via procedimentos ICE e DTLS. Um transporte WebRTC pode ser usado para receber mídia, enviar mídia ou para receber e enviar. Não há limitação no mediasoup. No entanto, devido ao seu design, o mediasoup-client requer transportes WebRTC separados para envio e recebimento. Ao chamar Router.createWebRtcTransport() definem-se os parâmetros que serão ofertados através de atributos, tais como:
 * listenIps - Endereço IP de hospedagem do servidor
 * enableUdp - Ofertar protocolo Udp
 * enableTcp - Ofertar protocolo Tcp
