@@ -31,12 +31,12 @@ Em seguida é definido a direção do transporte Webrtc com as chamadas createSe
 ### Tag "producedata"
 Estabelecida conexão, o lado cliente requisita a criação da instância Producer, citada anteriormente. Criada essa instância nos dois lados, o jogo está pronto para começar. Dessa forma o producedata espera os seguintes parâmetros Sctp:
 
-SctpParameters: {
-  port - Porta para comunicação 
-  OS - Define a quantidade de stream que irão dar saída do terminal para o Router
-  MIS - Define a quantidade de stream que irão dar entrada no terminal
-  maxMessageSize - Tamanho máximo das messagens
-}
+SctpParameters: 
+  * port - Porta para comunicação 
+  * OS - Define a quantidade de stream que irão dar saída do terminal para o Router
+  * MIS - Define a quantidade de stream que irão dar entrada no terminal
+  * maxMessageSize - Tamanho máximo das messagens
+
 
 ### Tag "req_dataconsumer
 Chamada para a criação do Consumer, realizando o subscriber no Producer do outro player. O servidor responder o cliente com a tag "res_dataconsumer". O req_dataconsumer espera os seguintes parâmetros:
