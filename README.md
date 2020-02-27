@@ -59,6 +59,11 @@ Para conexão, ao realizar a chamada createSendTransport() ou createRecvTranspor
 Em uma busca rápida no Wireshark nota-se o uso do protocolo Udp para transporte e DTLS sobre TLS.
 
 ![](image/data_tls.png)
+
+Outra captura interessante é a resposta do Binding Request feita pelo servidor STUN. A implementação de transporte WebRTC do mediasoup é o ICE Lite, o que significa que ele não inicia as conexões do ICE, mas espera as ICE Binding Request a partir dos terminais clientes.
+
+![](image/stun.png)
+
   
  ## Instalando módulos e pacotes
  1. git clone https://github.com/nelsonealves/SFU_Webrtc_server.git
