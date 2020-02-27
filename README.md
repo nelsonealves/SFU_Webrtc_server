@@ -55,6 +55,10 @@ Com isso, temos as midias ofertadas:
 Para conexão, ao realizar a chamada createSendTransport() ou createRecvTransport() no lado cliente é criada uma escuta aguardando a chamada do servidor do reconhecimento da definição da midia escolhida e é enviada uma chave dtls para autenticação e estabelecimento do transporte. A chamada webRtcTransport.connect({ dtlsParameters }) no lado servidor recebe a chave dtls responsável por prôver o transporte WebRtc com os clientes. Na imagem a seguir uma exemplo de uma chave dtls entregue para conexão:
 
 ![](image/dtls.png)
+
+Em uma busca rápida no Wireshark nota-se o uso do protocolo Udp para transporte e DTLS sobre TLS.
+
+![](image/data_tls.png)
   
  ## Instalando módulos e pacotes
  1. git clone https://github.com/nelsonealves/SFU_Webrtc_server.git
