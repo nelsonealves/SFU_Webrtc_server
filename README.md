@@ -7,15 +7,59 @@
   
   O MediaSoup é uma biblioteca em Javascript que implementa funções para transporte de Video, Audio e Data Channels. Uma vez que a escolha para o projeto é um servidor que realiza somente o transporte de dados de teclado e mouse do computador, o foco deste documento adiante será apenas para Data Channel.
 
- Sendo assim, cria-se um subprocesso no servidor instânciando a classe Worker. Dentro de um Worker pode-se criar diversos Router, que nada mais são que os responsáveis por realizar o roteamentos das midias para os demais endpoints. Diferente dos videos e áudios que utilizam RTP, o transporte dos Data Channels pelo MediaSoup será sobre SCTP (Stream Control Transmission Protocol), implementando duas classes: Producer, que encaminha Data Channels para o router SFU e o Consumer, responsável por encaminhar um Data Channel para um endpoint. A arquitetura dessas duas classes são semelhantes a técnica Publish-Subscriber e ambas são intânciadas no lado servidor e cliente. Um cliente A, para receber dados do cliente B, deve inscrever seu Consumer com o id do Producer do cliente A.
  
+ O mediasoup não fornece nenhum protocolo de sinalização para comunicar clientes e servidor. Para isso, a sinalização entre servidor e cliente do Phaser é feita através de websocket e suas tags foram criadas manualmente. Já a comunicação entre servidor Phaser e servidor MediaSoup é realizada através de requisições HTTP. Toda a implementação foi projetada para atender apenas dois usuários. Vale ressaltar que a sinalização serve para comunicação do jogo e também para estabelecer a conexão dos usuários com o servidor MediaSoup.usando WebSocket, HTTP ou qualquer outro meio de comunicação e trocar parâmetros, solicitações / respostas e notificações relacionadas a grupos de mídia, entre clientes e servidor.
+
+
+
 Ambos tem a capacidade de comunicar com o servidor e serem notificados do status do outro cliente. Sendo assim, todas as configurações necessárias para o correto funcionamento do MediaSoup é realizada até o momento que ambos clientes são notificados que estão preparados para iniciar o jogo. Além disso, o servidor informa ao cliente que acabou de entrar se o mesmo é o jogador 1 ou 2 (isso é necessário para a definição da posição inicial do personagem ao iniciar o jogo).  
 
 
 ## Sinalização
-A sinalização entre servidor e cliente do Phaser é feita através de websocket e suas tags foram criadas manualmente. Já a comunicação entre servidor Phaser e servidor MediaSoup é realizada através de requisições HTTP. Toda a implementação foi projetada para atender apenas dois usuários. Vale ressaltar que a sinalização serve para comunicação do jogo e também para estabelecer a conexão dos usuários com o servidor MediaSoup.
+
+Para estabelecimento do transporte WebRtc, é necessária a realização de alguns passos anteriormente. 
+ 1. Cria-se um subprocesso no servidor MediaSoup instânciando a classe Worker. 
+ 
+ ```
+ const worker = await mediasoup.createWorker();
+ ```
+ 2. Dentro de um Worker pode-se criar diversos Router, que nada mais são que os responsáveis por realizar o roteamentos das midias para os demais endpoints. O passo 1 e 2 é chamado na criação do servidor Phaser, requisitando através protocolo HTTP. 
+ 
+ ```
+ const router = await worker.createRouter();
+ ```
+ 3. Já no lado cliente, instancia-se uma classe Device, representando o cliente mediasoup. O mesmo é criado quando um cliente estabelece conexão com o Servidor Phaser via browser. 
+ ```
+ const device = new mediasoupClient.Device();
+ ```
+ 4. Diferente dos videos e áudios que utilizam RTP, o transporte dos Data Channels pelo MediaSoup será sobre SCTP (Stream Control Transmission Protocol). O cliente mediasoup precisa de transporte WebRTC separado para envio e recebimento. Sendo assim, para transmitir:
+    4.1. Um transporte WebRTC deve ser criado primeiro no Router do servidor mediasoup: 
+    ```
+    router.createWebRtcTransport()
+    ```
+    4.2. E então replicado no aplicativo do lado do cliente: 
+    ```
+    device.createSendTransport()
+    ```
+    É aqui que a negociação de midia acontece, na criação do transporte WebRtc. Um transporte WebRTC representa um caminho       de rede negociado por ambos via procedimentos ICE e DTLS. Um transporte WebRTC pode ser usado para receber mídia, enviar     mídia ou para receber e enviar. Não há limitação no mediasoup. Ao chamar Router.createWebRtcTransport() definem-se os       parâmetros que serão ofertados através de atributos, tais como:
+      * listenIps - Endereço IP de hospedagem do servidor
+      * enableUdp - Ofertar protocolo Udp
+      * enableTcp - Ofertar protocolo Tcp
+      * preferUdp - Dá preferência de escolha do protocolo Udp na oferta da midia.
+      * enableSctp - Ofertar protocolo Sctp
+  
+  Como estamos lidando com dataChannels, podemos ver no exemplo a seguir que no servidor foi dada prefêrencia ao uso do protocolo udp para transporte: 
+  
+![](image/webrtctransport.png)
+ 
+  O WebRtcTransport, responsável pela criação dos canais de transporte no mediasoup-client para transmissão e recepção dos data channels. Internamente, o transporte mantém uma instância do WebRTC RTCPeerConnection.
+  
+ ///////////, implementando duas classes: Producer, que encaminha Data Channels para o router SFU e o Consumer, responsável por encaminhar um Data Channel para um endpoint. A arquitetura dessas duas classes são semelhantes a técnica Publish-Subscriber e ambas são intânciadas no lado servidor e cliente. Um cliente A, para receber dados do cliente B, deve inscrever seu Consumer com o id do Producer do cliente A.
+
+Como já informado no tópico anterior, 
+
 ### Tag "req_transport"
-A tag "req_transport" notifica o servidor da sua entrada no jogo e requisita as midias, bem como instância o WebRtcTransport, responsável pela criação dos canais de transporte no mediasoup-client para transmissão e recepção dos data channels. Internamente, o transporte mantém uma instância do WebRTC RTCPeerConnection. A chamada é feita através de uma chamada HTTP no mediasoup server com uri "/router/(id do router)/webrtc_transport/create". O servidor responde a requisição através da tag "res_transport"
+A tag "req_transport" notifica o servidor da sua entrada no jogo e requisita as midias, bem como instância A chamada é feita através de uma chamada HTTP no mediasoup server com uri "/router/(id do router)/webrtc_transport/create". O servidor responde a requisição através da tag "res_transport"
 
 ### Tag "res_transport"
 Nesta etapa é que acontece a oferta de midia do MediaSoup. Ao receber as instâncias do objeto WebRtcTransport os parâmetros ofertados pelo servidos são enviados para o cliente, bastando apenas criar as instâncias no lado cliente e conectar o transporte. Devido ao seu design, o mediasoup-client requer transportes WebRTC separados para envio e recebimento. Sendo assim é recebido como resposta da chamada "req_transport" as ofertas de midia do transporte Webrtc (Nesse ponto ainda não foi  definido qual recebe e qual envia, entretanto já é definido os atributos "send" e "recv" para facilitar na programação). 
@@ -47,16 +91,7 @@ Chamada para a criação do Consumer, realizando o subscriber no Producer do out
 
 ## Negociação de mídia
 
-A negociação de midia acontece na criação do transporte WebRtc. Um transporte WebRTC representa um caminho de rede negociado por ambos via procedimentos ICE e DTLS. Um transporte WebRTC pode ser usado para receber mídia, enviar mídia ou para receber e enviar. Não há limitação no mediasoup. Ao chamar Router.createWebRtcTransport() definem-se os parâmetros que serão ofertados através de atributos, tais como:
-* listenIps - Endereço IP de hospedagem do servidor
-* enableUdp - Ofertar protocolo Udp
-* enableTcp - Ofertar protocolo Tcp
-* preferUdp - Dá preferência de escolha do protocolo Udp na oferta da midia.
-* enableSctp - Ofertar protocolo Sctp
-  
-Como estamos lidando com dataChannels, podemos ver no exemplo a seguir que no servidor foi dada prefêrencia ao uso do protocolo udp para transporte: 
-  
-![](image/webrtctransport.png)
+
   
 Com isso, temos as midias ofertadas:
  
