@@ -37,22 +37,28 @@ Para estabelecimento do transporte WebRtc, é necessária a realização de algu
     ```
     router.createWebRtcTransport()
     ```
-    4.2. E então replicado no aplicativo do lado do cliente: 
-    ```
-    device.createSendTransport()
-    ```
-    É aqui que a negociação de midia acontece, na criação do transporte WebRtc. Um transporte WebRTC representa um caminho       de rede negociado por ambos via procedimentos ICE e DTLS. Um transporte WebRTC pode ser usado para receber mídia, enviar     mídia ou para receber e enviar. Não há limitação no mediasoup. Ao chamar Router.createWebRtcTransport() definem-se os       parâmetros que serão ofertados através de atributos, tais como:
+     É aqui que a negociação de midia acontece, na criação do transporte WebRtc. Um transporte WebRTC representa um caminho      de rede negociado por ambos via procedimentos ICE e DTLS. Um transporte WebRTC pode ser usado para receber mídia,enviar      mídia ou para receber e enviar. Não há limitação no mediasoup. Ao chamar Router.createWebRtcTransport() definem-se os        parâmetros que serão ofertados através de atributos, tais como:
       * listenIps - Endereço IP de hospedagem do servidor
       * enableUdp - Ofertar protocolo Udp
       * enableTcp - Ofertar protocolo Tcp
       * preferUdp - Dá preferência de escolha do protocolo Udp na oferta da midia.
       * enableSctp - Ofertar protocolo Sctp
   
-  Como estamos lidando com dataChannels, podemos ver no exemplo a seguir que no servidor foi dada prefêrencia ao uso do protocolo udp para transporte: 
+    Como estamos lidando com dataChannels, podemos ver no exemplo a seguir que no servidor foi dada prefêrencia ao uso do       protocolo udp para transporte: 
   
 ![](image/webrtctransport.png)
  
   O WebRtcTransport, responsável pela criação dos canais de transporte no mediasoup-client para transmissão e recepção dos data channels. Internamente, o transporte mantém uma instância do WebRTC RTCPeerConnection.
+    
+    4.2. A oferta é recebida no cliente e o transporte criado no servidor também deve ser feita no lado cliente. Como dito anteriormente, é necessário criar transportes para recepção e transmissão, ou seja, dois transportes. No lado servidor chamar a funçao do item 4.1 por duas vezes, porém no cliente são duas funções que esperam os parâmetros de oferta do cliente.
+    * Para transmissão:
+    ```
+    device.createSendTransport({Midia_ofertada})
+    ```
+    * Para recepção
+   ```
+    device.createRecvTransport({Midia_ofertada})
+    ```
   
  ///////////, implementando duas classes: Producer, que encaminha Data Channels para o router SFU e o Consumer, responsável por encaminhar um Data Channel para um endpoint. A arquitetura dessas duas classes são semelhantes a técnica Publish-Subscriber e ambas são intânciadas no lado servidor e cliente. Um cliente A, para receber dados do cliente B, deve inscrever seu Consumer com o id do Producer do cliente A.
 
