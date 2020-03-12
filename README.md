@@ -2,6 +2,13 @@
 ## Resumo
   O projeto proposto busca fornecer um serviço de infraestrutura para jogos multi usuários em tempo real, visando baixa latência. Para isso alguns serviços e tecnologias já existentes serão utilizadas e integradas de forma a entregar a solução. A ideia final é tornar o serviço genérico para qualquer tipo de jogo da categoria, rodando em segundo plano. Para o presente trabalho, foi utilizado um jogo implementado com uma biblioteca para desenvolvimento de jogos em 2D, o Phaser. O jogo se trata de dois personagens que percorrem o mapa em caça de estrelas espalhadas pelo cenário. Ao coletar todas o jogo tem seu fim e é dado um vencedor.
 
+## Instalando módulos e pacotes
+ 1. git clone https://github.com/nelsonealves/SFU_Webrtc_server.git
+ 2. cd SFU_Webrtc_server
+ 3. ./install.sh
+ 4. ./run.sh
+ 5. Abra o navegador e acesse http://(ip do servidor):3000 
+ 
 ## Infraestrutura
   Por se tratar de um jogo, o serviço responsável pelo roteamento de dados deve ser confiável e ágil, de modo a garantir uma latência imperceptível ao usuário. Dessa forma foi escolhida uma técnica de roteamento de dados conhecida por SFU (Selective Forwarding Unit). A SFU é uma poderosa unidade responsável por reconhecer todos os usuários inseridos na aplicação, receber múltiplas stream de dados  e decidir o seu destino. Entre diversas bibliotecas que disponibilizam um servidor SFU, a escolhida foi a MediaSoup.
   
@@ -17,22 +24,37 @@ Ambos tem a capacidade de comunicar com o servidor e serem notificados do status
 
 ## Sinalização
 
+
+
 Para estabelecimento do transporte WebRtc, é necessária a realização de alguns passos anteriormente. 
  1. Cria-se um subprocesso no servidor MediaSoup instânciando a classe Worker. 
- 
  ```
  const worker = await mediasoup.createWorker();
  ```
- 2. Dentro de um Worker pode-se criar diversos Router, que nada mais são que os responsáveis por realizar o roteamentos das midias para os demais endpoints. O passo 1 e 2 é chamado na criação do servidor Phaser, requisitando através protocolo HTTP. 
+ 2. Dentro de um Worker pode-se criar diversos Router, que nada mais são que os responsáveis por realizar o roteamentos das midias para os demais endpoints. A chamada do passo 1 e 2 é feita através de uma chamada HTTP no mediasoup server com uri "/router/(id do router)/webrtc_transport/create".  
  
  ```
  const router = await worker.createRouter();
  ```
+ O servidor retornar o pedido com o id do Router criado, como no exemplo abaixo:
+ 
+ ```
+ { router_id: '7d1f6b6e-f621-410a-97d5-4faedb5006d3' }
+ ```
+ 
+
+ 
  3. Já no lado cliente, instancia-se uma classe Device, representando o cliente mediasoup. O mesmo é criado quando um cliente estabelece conexão com o Servidor Phaser via browser. 
  ```
  const device = new mediasoupClient.Device();
  ```
- 4. Diferente dos videos e áudios que utilizam RTP, o transporte dos Data Channels pelo MediaSoup será sobre SCTP (Stream Control Transmission Protocol). O cliente mediasoup precisa de transporte WebRTC separado para envio e recebimento. Sendo assim, para transmitir:
+ ### Tag "req_transport"
+A tag "req_transport" notifica o servidor da entrada de um cliente no jogo e requisita as midias. O servidor responde a requisição emitindo as midias ofertadas para a tag "res_transport". É recebido como resposta da chamada "req_transport" as ofertas de midia do transporte Webrtc (Nesse ponto ainda não foi definido qual recebe e qual envia, entretanto já é definido os atributos "send" e "recv" para facilitar na programação). 
+
+* send: Parâmetro com a oferta do transporte de envio
+* recv: Parâmetro com a oferta do transporte de recepção
+
+4. Diferente dos videos e áudios que utilizam RTP, o transporte dos Data Channels pelo MediaSoup será sobre SCTP (Stream Control Transmission Protocol). O cliente mediasoup precisa de transporte WebRTC separado para envio e recebimento. Sendo assim, para transmitir:
     4.1. Um transporte WebRTC deve ser criado primeiro no Router do servidor mediasoup: 
     ```
     router.createWebRtcTransport()
@@ -49,37 +71,35 @@ Para estabelecimento do transporte WebRtc, é necessária a realização de algu
 ![](image/webrtctransport.png)
  
   O WebRtcTransport, responsável pela criação dos canais de transporte no mediasoup-client para transmissão e recepção dos data channels. Internamente, o transporte mantém uma instância do WebRTC RTCPeerConnection.
-    
-    4.2. A oferta é recebida no cliente e o transporte criado no servidor também deve ser feita no lado cliente. Como dito anteriormente, é necessário criar transportes para recepção e transmissão, ou seja, dois transportes. No lado servidor chamar a funçao do item 4.1 por duas vezes, porém no cliente são duas funções que esperam os parâmetros de oferta do cliente.
-    * Para transmissão:
+  
+  4.2. A oferta é recebida no cliente e o transporte criado no servidor também deve ser feita no lado cliente. Como dito anteriormente, é necessário criar transportes para recepção e transmissão, ou seja, dois transportes. No lado servidor chamar a funçao do item 4.1 por duas vezes, porém no cliente são duas funções que esperam os parâmetros de oferta do cliente.
+  * Para transmissão:
     ```
-    device.createSendTransport({Midia_ofertada})
+    const send = device.createSendTransport({Midia_ofertada})
     ```
     * Para recepção
-   ```
-    device.createRecvTransport({Midia_ofertada})
-    ```
+  ```
+   const recv = device.createRecvTransport({Midia_ofertada})
+  ```
+  O MediaSoup possui um websocket com tags pré definidas que são usadas para casos como esse, que o servidor espera a resposta do cliente. Sendo assim, foi implementado uma escuta para a tag "connect". O servidor, ao receber a resposta da oferta, envia via websocket a chave dtls para estabelecimento seguro do transporte:
+  ```
+   this.send.on("connect", ({ dtlsParameters }, callback, errback) => {
+          intro.socket.emit("connect-webrtc", {dtlsParameters: dtlsParameters, transport_id: intro.send.id});
+          intro.socket.on("res_connect_webrtc",()=>{
+            callback();
+          });
+        })
+  ```     
+  ![](image/dtls.png)
   
- ///////////, implementando duas classes: Producer, que encaminha Data Channels para o router SFU e o Consumer, responsável por encaminhar um Data Channel para um endpoint. A arquitetura dessas duas classes são semelhantes a técnica Publish-Subscriber e ambas são intânciadas no lado servidor e cliente. Um cliente A, para receber dados do cliente B, deve inscrever seu Consumer com o id do Producer do cliente A.
+  Recebendo a chave dtls, a mesma é enviada novamente para o servidor através da tag "connect-webrtc", essa tag chama a uri "/router/'+data.transport_id+"/webrtc_transport/connect" com a chave e o id dos transportes (sendTransport e recvTransport). Feito isso, o transporte está estabelecido. Agora é necessário criar as classes produtoras e consumidoras de dados: Producer e Consumer. Producer, que encaminha Data Channels para o router SFU e o Consumer, responsável por encaminhar um Data Channel para um endpoint. A arquitetura dessas duas classes são semelhantes a técnica Publish-Subscriber e ambas são intânciadas no lado servidor e cliente. Um cliente A, para receber dados do cliente B, deve inscrever seu Consumer com o id do Producer do cliente A.
 
-Como já informado no tópico anterior, 
-
-### Tag "req_transport"
-A tag "req_transport" notifica o servidor da sua entrada no jogo e requisita as midias, bem como instância A chamada é feita através de uma chamada HTTP no mediasoup server com uri "/router/(id do router)/webrtc_transport/create". O servidor responde a requisição através da tag "res_transport"
-
-### Tag "res_transport"
-Nesta etapa é que acontece a oferta de midia do MediaSoup. Ao receber as instâncias do objeto WebRtcTransport os parâmetros ofertados pelo servidos são enviados para o cliente, bastando apenas criar as instâncias no lado cliente e conectar o transporte. Devido ao seu design, o mediasoup-client requer transportes WebRTC separados para envio e recebimento. Sendo assim é recebido como resposta da chamada "req_transport" as ofertas de midia do transporte Webrtc (Nesse ponto ainda não foi  definido qual recebe e qual envia, entretanto já é definido os atributos "send" e "recv" para facilitar na programação). 
-
-* send: Parâmetro com a oferta do transporte de envio
-* recv: Parâmetro com a oferta do transporte de recepção
-
-Em seguida é definido a direção do transporte Webrtc com as chamadas createSendTransport(options) e createRecvTransport(options), ambos recebem as mídias ofertadas. 
-
-
-
-
-### Tag "producedata"
-Estabelecida conexão, o lado cliente requisita a criação da instância Producer, citada anteriormente. Criada essa instância nos dois lados, o jogo está pronto para começar. Dessa forma o producedata espera os seguintes parâmetros Sctp:
+  ### Tag "producedata"
+Estabelecida conexão do transporte, o lado cliente cria sua instância Producer e requisita a criação da mesma no servidor:
+```
+ const sendProduce = this.send.produceData(); 
+```
+É criado uma escuta via websocket interno MediaSoup para a tag "producedata" e feita uma chamada HTTP para a uri "/router/'+intro.send.id+"/webrtc_transport/data_producer". O servidor cria uma instância Producer, que espera os seguintes parâmetros Sctp:
 
 SctpParameters: 
   * port - Porta para comunicação 
@@ -87,27 +107,35 @@ SctpParameters:
   * MIS - Define a quantidade de stream que irão dar entrada no terminal
   * maxMessageSize - Tamanho máximo das messagens
 
+```
+const dataProducer = await webrtc1.produceData(SctpParameters);
+```
+Feito isso, o cliente está pronto para enviar dados para o Router.
+
 
 ### Tag "req_dataconsumer
-Chamada para a criação do Consumer, realizando o subscriber no Producer do outro player. O servidor responder o cliente com a tag "res_dataconsumer". O req_dataconsumer espera os seguintes parâmetros:
+Depois que o transporte de recebimento é criado, o cliente pode consumir vários DataChannels nele. No entanto, o pedido é o oposto (aqui o Consumer deve ser criado primeiro no servidor). 
+
+   1. Enviada uma requisição HTTP para o servidor instânciar o Consumer através da uri "/router/'+data.recv_id+"/webrtc_transport/data_consumer" passando id do seu recvTransport e sendTransport. No servidor cria-se uma instância que espera os seguintes parâmetros:
 
 * dataProducerId - ID do producer que vai se increver para receber mensagens
-* sctpStreamParameters - Parâmetros do SCTP 
+
+O servidor responde a requisição com as seguintes informações:
+
+```
+{ id: 'c6d29e35-d21b-452d-890d-8c17db8406fe', id do Consumer criado
+  producerId: '2d179c44-3111-4791-b941-16ed85ab7f99', // id do Producer que irá se inscrever
+  sctpStreamParameters: { ordered: true, streamId: 0 }, // Parâmetros SCTP
+  label: '',
+  protocol: '' }
+```
+Esses parâmetros são esperados pela função do lado cliente que cria a instância do Consumer:
+
+```
+const consumer = intro.recv.consumeData(parameters);
+```
   
-
-## Negociação de mídia
-
-
-  
-Com isso, temos as midias ofertadas:
- 
-![](image/midia_ofertada.png)
-  
-Para conexão, ao realizar a chamada createSendTransport() ou createRecvTransport() no lado cliente é criada uma escuta aguardando a chamada do servidor do reconhecimento da definição da midia escolhida e é enviada uma chave dtls para autenticação e estabelecimento do transporte. A chamada webRtcTransport.connect({ dtlsParameters }) no lado servidor recebe a chave dtls responsável por prôver o transporte WebRtc com os clientes. Na imagem a seguir uma exemplo de uma chave dtls entregue para conexão:
-
-![](image/dtls.png)
-
-Em uma busca rápida no Wireshark nota-se o uso do protocolo Udp para transporte e DTLS sobre TLS.
+Sendo assim, é efetuada toda a implementação do jogo. Em uma busca rápida no Wireshark nota-se o uso do protocolo Udp para transporte e DTLS sobre TLS.
 
 ![](image/data_tls.png)
 
@@ -116,13 +144,10 @@ Outra captura interessante é a resposta do Binding Request feita pelo servidor 
 ![](image/stun.png)
 
   
- ## Instalando módulos e pacotes
- 1. git clone https://github.com/nelsonealves/SFU_Webrtc_server.git
- 2. cd SFU_Webrtc_server
- 3. ./install.sh
- 4. ./run.sh
- 5. Abra o navegador e acesse http://(ip do servidor):3000  
+  
 
- 
+   
+  
+
  
 
