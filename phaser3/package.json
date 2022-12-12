@@ -16,7 +16,7 @@
   },
   "version": "0.2.0",
   "dependencies": {
-    "express": "^4.17.1",
+    "express": "^4.17.3",
     "mediasoup-client": "^3.3.3",
     "node-fetch": "^2.6.0",
     "nodemon": "^1.19.4",
